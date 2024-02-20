@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Image Uploader</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        .input-group input[type="text"],
+        .input-group input[type="file"] {
+            width: calc(100% - 110px);
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .submit-btn,
+        .file-upload-btn {
+            background-color: #00fa9a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover,
+        .file-upload-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+
+        function ImageUploader() {
+            const [images, setImages] = React.useState([]);
+            const [inputValue, setInputValue] = React.useState('');
+            const [files, setFiles] = React.useState([]);
+
+            const handleInputChange = (event) => {
+                setInputValue(event.target.value);
+            };
+
+            /*Available Upload File*/
+            /*const handleFileUpload = (event) => {
+                const filesList = event.target.files;
+                const newImages = [];
+    
+                // 将每个文件对象存储在状态中
+                const newFiles = Array.from(filesList).map(file => {
+                    newImages.push(URL.createObjectURL(file));
+                    return file;
+                });
+    
+                // 更新文件对象和图片列表的状态
+                setFiles(prevFiles => [...prevFiles, ...newFiles]);
+                setImages(prevImages => [...prevImages, ...newImages]);
+            };*/
+            /*Only Upload Picture*/
+            const handleFileUpload = (event) => {
+                const filesList = event.target.files;
+                const newImages = [];
+                const newFiles = [];
+
+                // 检查每个文件是否为图片，然后再将其添加到状态中
+                Array.from(filesList).forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        newFiles.push(file);
+                        newImages.push(URL.createObjectURL(file));
+                    } else {
+                        alert('只允许上传图片文件。');
+                    }
+                });
+
+                // 仅将图片文件添加到状态中
+                setFiles(prevFiles => [...prevFiles, ...newFiles]);
+                setImages(prevImages => [...prevImages, ...newImages]);
+            };
+
+            const handleSubmit = () => {
+                // 构造表单数据
+                const formData = new FormData();
+                formData.append('number', inputValue);
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    formData.append(`file${i + 1}`, file, file.name);
+                }
+                console.log(formData)
+                
+                // 发送 POST 请求
+                fetch('http://192.168.20.254:5000/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data);
+                        if (data.exists) {
+                            alert("success！");
+                            window.location.reload();
+                        } else {
+                            alert("fail");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert("Fail！");
+                    });
+            };
+
+            return (
+                <div className="container">
+                    <div className="input-group">
+                        <input type="file" multiple onChange={handleFileUpload} className="file-upload-btn" />
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={handleInputChange}
+                            placeholder="Enter a sku number"
+                        />
+                    </div>
+                    <button className="submit-btn" onClick={handleSubmit}>Submit</button>
+                    <div className="image-preview">
+                        {images.map((image, index) => (
+                            <img key={index} src={image} alt={`Image ${index}`} />
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<ImageUploader />);
+
+
+
+    </script>
+</body>
+
+</html>
